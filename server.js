@@ -110,6 +110,16 @@ const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 });
+
+// Handle server startup/runtime errors gracefully
+server.on('error', (err) => {
+  console.error(`Server error: ${err.message}`);
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use. Please use a different port or kill the process using it.`);
+  }
+  process.exit(1);
+});
+
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
   console.error(`Error: ${err.message}`);
