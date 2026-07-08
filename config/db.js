@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const connectDB = async () => {
-  let uri = process.env.MONGO_URI || '';
+  let uri = process.env.MONGO_URI;
   
   // Verify if it's a valid connection string format
   if (!uri.startsWith('mongodb://') && !uri.startsWith('mongodb+srv://')) {

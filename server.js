@@ -27,7 +27,8 @@ connectDB();
 const app = express();
 
 // Body parser
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Enable CORS — allow frontend URL(s) from env (Vercel in prod, localhost in dev)
 // Configure either:
@@ -38,13 +39,7 @@ const allowedOrigins = [
     ? process.env.FRONTEND_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean)
     : []),
   ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
-  // Common Vercel/hosted origins
-  'https://todo-lemon-delta.vercel.app',
-  // Common localhost dev ports
   'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:5175',
-  'http://localhost:4173',
 ];
 
 app.use(

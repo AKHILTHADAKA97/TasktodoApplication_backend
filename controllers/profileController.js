@@ -1,4 +1,10 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import User from '../models/User.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // @desc    Get user profile
 // @route   GET /api/profile
@@ -34,8 +40,47 @@ export const updateProfile = async (req, res, next) => {
     const { name, email, avatar, bio } = req.body;
 
     user.name = name || user.name;
-    user.avatar = avatar !== undefined ? avatar : user.avatar;
     user.bio = bio !== undefined ? bio : user.bio;
+
+    if (avatar !== undefined) {
+      if (avatar && avatar.startsWith('data:image/')) {
+        const matches = avatar.match(/^data:image\/([A-Za-z-+\/]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          const rawExt = matches[1];
+          let ext = 'png';
+          if (rawExt.includes('jpeg') || rawExt.includes('jpg')) {
+            ext = 'jpg';
+          } else if (rawExt.includes('gif')) {
+            ext = 'gif';
+          } else if (rawExt.includes('webp')) {
+            ext = 'webp';
+          } else if (rawExt.includes('svg')) {
+            ext = 'svg';
+          }
+
+          const base64Data = matches[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          const emailToUse = email || user.email;
+          const fileSafeEmail = emailToUse.replace(/[^a-zA-Z0-9]/g, '_');
+          const filename = `${fileSafeEmail}.${ext}`;
+          
+          const uploadDir = path.join(__dirname, '..', 'upload', 'profile');
+          if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+          }
+
+          const filePath = path.join(uploadDir, filename);
+          await fs.promises.writeFile(filePath, buffer);
+          
+          const host = req.get('host');
+          const protocol = req.protocol;
+          user.avatar = `${protocol}://${host}/uploads/profile/${filename}`;
+        }
+      } else {
+        user.avatar = avatar;
+      }
+    }
 
     if (email && email !== user.email) {
       const emailExists = await User.findOne({ email });
@@ -63,9 +108,7 @@ export const updateProfile = async (req, res, next) => {
   }
 };
 
-// @desc    Change password
-// @route   PUT /api/profile/change-password
-// @access  Private
+// change-password
 export const changePassword = async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body;
